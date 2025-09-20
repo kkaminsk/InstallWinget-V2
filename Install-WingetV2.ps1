@@ -158,7 +158,7 @@ function Install-NuGetProvider {
         }
         
         Write-Log "Installing NuGet package provider..." -Level "INFO"
-        Install-PackageProvider -Name "NuGet" -MinimumVersion 2.8.5.201 -Force -Scope AllUsers -ErrorAction Stop
+        Install-PackageProvider -Name "NuGet" -MinimumVersion 2.8.5.201 -Force -Scope AllUsers -Confirm:$false -ErrorAction Stop
         Write-Log "NuGet package provider installed successfully." -Level "SUCCESS"
         return $true
     }
@@ -225,6 +225,7 @@ function Install-WinGet {
         # Prepare parameters for Repair-WinGetPackageManager
         $repairParams = @{
             Force = $true
+            AllUsers = $true
         }
         
         if ($IncludePrerelease) {
