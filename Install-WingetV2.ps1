@@ -225,7 +225,7 @@ function Install-WinGetModule {
             Write-Log "Set PSGallery as trusted repository." -Level "INFO"
         }
         
-        Install-Module -Name "Microsoft.WinGet.Client" -Scope AllUsers -Force -ErrorAction Stop
+        Install-Module -Name "Microsoft.WinGet.Client" -PackageProviderName NuGet -Scope AllUsers -Force -ErrorAction Stop
         Write-Log "Microsoft.WinGet.Client module installed successfully." -Level "SUCCESS"
         return $true
     }
