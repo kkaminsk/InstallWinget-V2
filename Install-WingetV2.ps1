@@ -143,31 +143,58 @@ function Test-Prerequisites {
 function Install-NuGetProvider {
     <#
     .SYNOPSIS
-        Installs NuGet package provider if not already present.
+        Installs NuGet package provider if not already present, using a manual download to ensure non-interactive execution.
     #>
     [CmdletBinding()]
     param()
-    
+
     Write-Log "Checking NuGet package provider..." -Level "INFO"
-    
+
     try {
         $nugetProvider = Get-PackageProvider -Name "NuGet" -ErrorAction SilentlyContinue
         if ($nugetProvider) {
             Write-Log "NuGet provider is already installed (Version: $($nugetProvider.Version))" -Level "SUCCESS"
             return $true
         }
-        
-        Write-Log "Installing NuGet package provider..." -Level "INFO"
-        # Set environment variable to suppress prompts
-        $env:NUGET_XMLDOC_MODE = 'skip'
+
+        Write-Log "NuGet provider not found. Attempting manual, non-interactive installation." -Level "INFO"
+
+        # Manually download and install to avoid any interactive prompts
         [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        # Install with additional parameters to ensure silent installation
-        Install-PackageProvider -Name "NuGet" -MinimumVersion 2.8.5.201 -Force -Scope AllUsers -Confirm:$false -ForceBootstrap -WarningAction SilentlyContinue -InformationAction SilentlyContinue -ErrorAction Stop
-        Write-Log "NuGet package provider installed successfully." -Level "SUCCESS"
-        return $true
+        $nuGetVersion = "2.8.5.208" # Pinning a known stable version
+        $providerUrl = "https://cdn.oneget.org/providers/Microsoft.PackageManagement.NuGetProvider-$($nuGetVersion).dll"
+        $destinationFolder = "$env:ProgramFiles\PackageManagement\ProviderAssemblies\$($nuGetVersion)"
+        $destinationPath = "$destinationFolder\Microsoft.PackageManagement.NuGetProvider-$($nuGetVersion).dll"
+
+        if (-not (Test-Path -Path $destinationFolder)) {
+            Write-Log "Creating destination directory: $destinationFolder" -Level "INFO"
+            New-Item -ItemType Directory -Path $destinationFolder -Force -ErrorAction Stop
+        }
+
+        Write-Log "Downloading NuGet provider from: $providerUrl" -Level "INFO"
+        Invoke-WebRequest -Uri $providerUrl -OutFile $destinationPath -UseBasicParsing -ErrorAction Stop
+
+        # Verify the file is there
+        if (-not (Test-Path -Path $destinationPath)) {
+            Write-Log "Failed to download NuGet provider DLL." -Level "ERROR"
+            return $false
+        }
+
+        Write-Log "NuGet provider DLL downloaded successfully. Verifying installation..." -Level "SUCCESS"
+
+        # Re-check for the provider
+        $nugetProvider = Get-PackageProvider -Name "NuGet" -ErrorAction SilentlyContinue
+        if ($nugetProvider) {
+            Write-Log "NuGet provider successfully installed and verified (Version: $($nugetProvider.Version))" -Level "SUCCESS"
+            return $true
+        }
+        else {
+            Write-Log "Manual installation failed. NuGet provider still not found after download." -Level "ERROR"
+            return $false
+        }
     }
     catch {
-        Write-Log "Failed to install NuGet package provider: $_" -Level "ERROR"
+        Write-Log "Failed to manually install NuGet package provider: $_" -Level "ERROR"
         return $false
     }
 }
