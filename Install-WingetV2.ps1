@@ -158,7 +158,11 @@ function Install-NuGetProvider {
         }
         
         Write-Log "Installing NuGet package provider..." -Level "INFO"
-        Install-PackageProvider -Name "NuGet" -MinimumVersion 2.8.5.201 -Force -Scope AllUsers -Confirm:$false -ErrorAction Stop
+        # Set environment variable to suppress prompts
+        $env:NUGET_XMLDOC_MODE = 'skip'
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        # Install with additional parameters to ensure silent installation
+        Install-PackageProvider -Name "NuGet" -MinimumVersion 2.8.5.201 -Force -Scope AllUsers -Confirm:$false -ForceBootstrap -WarningAction SilentlyContinue -InformationAction SilentlyContinue -ErrorAction Stop
         Write-Log "NuGet package provider installed successfully." -Level "SUCCESS"
         return $true
     }
@@ -237,13 +241,41 @@ function Install-WinGet {
         Write-Log "This may take several minutes as it downloads and installs multiple components..." -Level "INFO"
         
         # Execute the repair command
-        Repair-WinGetPackageManager @repairParams -ErrorAction Stop
+        try {
+            Repair-WinGetPackageManager @repairParams -ErrorAction Stop
+            Write-Log "Winget installation completed successfully." -Level "SUCCESS"
+        }
+        catch {
+            Write-Log "Repair-WinGetPackageManager reported an error: $_" -Level "WARNING"
+            Write-Log "Checking if Winget was installed despite the error..." -Level "INFO"
+        }
         
-        Write-Log "Winget installation completed successfully." -Level "SUCCESS"
-        return $true
-    }
-    catch {
-        Write-Log "Failed to install Winget: $_" -Level "ERROR"
+        # Always verify Winget installation regardless of repair command result
+        # Sometimes the repair command reports errors but Winget still gets installed
+        Start-Sleep -Seconds 3  # Give Windows time to register the installation
+        
+        # Test if winget command is available
+        $wingetPath = Get-Command "winget" -ErrorAction SilentlyContinue
+        if ($wingetPath) {
+            Write-Log "Winget installation verification successful." -Level "SUCCESS"
+            return $true
+        }
+        
+        # If not found in PATH, check common installation locations
+        $commonPaths = @(
+            "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe",
+            "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller*\winget.exe"
+        )
+        
+        foreach ($path in $commonPaths) {
+            $resolvedPaths = Get-ChildItem -Path $path -ErrorAction SilentlyContinue
+            if ($resolvedPaths) {
+                Write-Log "Winget found at: $($resolvedPaths[0].FullName)" -Level "SUCCESS"
+                return $true
+            }
+        }
+        
+        Write-Log "Winget installation verification failed - Winget not found." -Level "ERROR"
         return $false
     }
 }
