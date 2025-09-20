@@ -278,6 +278,10 @@ function Install-WinGet {
         Write-Log "Winget installation verification failed - Winget not found." -Level "ERROR"
         return $false
     }
+    catch {
+        Write-Log "Unexpected error during Winget installation: $_" -Level "ERROR"
+        return $false
+    }
 }
 
 function Test-WinGetInstallation {
