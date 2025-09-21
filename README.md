@@ -19,7 +19,7 @@ A robust PowerShell script that automates the installation of Windows Package Ma
 .\Install-WingetV2.ps1 -LogPath "C:\Logs\Winget-Install.log"
 ```
 
-### Combined Options
+### Winget Prerelease Install
 ```powershell
 .\Install-WingetV2.ps1 -IncludePrerelease -LogPath "C:\Logs\Winget-Install.log"
 ```
@@ -32,8 +32,8 @@ This script addresses the challenge of bootstrapping Winget on clean Windows ins
 
 **Primary Use Cases:**
 - Clean installations of Windows Server 2025 and other server editions
-- Automated deployment scenarios using Microsoft Intune, SCCM, or custom startup scripts
-- System administrator workflows for bootstrapping package management capabilities
+- Unattended installation through NonInteractive mode
+- Eases system administrator workflows for bootstrapping package management capabilities
 - Enterprise environments requiring consistent Winget deployment across multiple systems
 
 ## Parameters
@@ -75,8 +75,6 @@ The script automatically installs the following components:
   - Microsoft.WindowsAppSDK.DDLM (for appropriate architecture)
 - **Other Dependencies**: Microsoft.VCLibs (Visual C++ Runtime)
 
-{{ ... }}
-
 ## Installation Process
 
 The script follows this sequence:
@@ -89,5 +87,3 @@ The script follows this sequence:
 6. **Winget Installation** - Executes `Repair-WinGetPackageManager`
 7. **Verification** - Tests Winget functionality
 8. **Completion** - Reports success and duration
-
-{{ ... }}
