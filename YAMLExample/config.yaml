@@ -1,0 +1,19 @@
+# Save this content as config.yaml
+properties:
+  configurationVersion: 0.2.0
+  resources:
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installPowerToys
+      directives:
+        description: "Install Microsoft PowerToys"
+      settings:
+        id: Microsoft.PowerToys
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installNotepadPlusPlus
+      directives:
+        description: "Install Notepad++"
+      settings:
+        id: Notepad++.Notepad++
+        source: winget
