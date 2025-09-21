@@ -148,7 +148,7 @@ function Test-Prerequisites {
 function Install-NuGetProvider {
     <#
     .SYNOPSIS
-        Installs NuGet package provider if not already present, using a manual download to ensure non-interactive execution.
+        Installs the NuGet package provider if it is not already present, ensuring non-interactive execution.
     #>
     [CmdletBinding()]
     param()
@@ -156,50 +156,20 @@ function Install-NuGetProvider {
     Write-Log "Checking NuGet package provider..." -Level "INFO"
 
     try {
-        $nugetProvider = Get-PackageProvider -Name "NuGet" -ErrorAction SilentlyContinue
-        if ($nugetProvider) {
-            Write-Log "NuGet provider is already installed (Version: $($nugetProvider.Version))" -Level "SUCCESS"
+        if (Get-PackageProvider -Name "NuGet" -ErrorAction SilentlyContinue) {
+            Write-Log "NuGet provider is already installed." -Level "SUCCESS"
             return $true
         }
 
-        Write-Log "NuGet provider not found. Attempting manual, non-interactive installation." -Level "INFO"
-
-        # Manually download and install to avoid any interactive prompts
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        $nuGetVersion = "2.8.5.208" # Pinning a known stable version
-        $providerUrl = "https://cdn.oneget.org/providers/Microsoft.PackageManagement.NuGetProvider-$($nuGetVersion).dll"
-        $destinationFolder = "$env:ProgramFiles\PackageManagement\ProviderAssemblies\$($nuGetVersion)"
-        $destinationPath = "$destinationFolder\Microsoft.PackageManagement.NuGetProvider-$($nuGetVersion).dll"
-
-        if (-not (Test-Path -Path $destinationFolder)) {
-            Write-Log "Creating destination directory: $destinationFolder" -Level "INFO"
-            New-Item -ItemType Directory -Path $destinationFolder -Force -ErrorAction Stop
-        }
-
-        Write-Log "Downloading NuGet provider from: $providerUrl" -Level "INFO"
-        Invoke-WebRequest -Uri $providerUrl -OutFile $destinationPath -UseBasicParsing -ErrorAction Stop
-
-        # Verify the file is there
-        if (-not (Test-Path -Path $destinationPath)) {
-            Write-Log "Failed to download NuGet provider DLL." -Level "ERROR"
-            return $false
-        }
-
-        Write-Log "NuGet provider DLL downloaded successfully. Verifying installation..." -Level "SUCCESS"
-
-        # Re-check for the provider
-        $nugetProvider = Get-PackageProvider -Name "NuGet" -ErrorAction SilentlyContinue
-        if ($nugetProvider) {
-            Write-Log "NuGet provider successfully installed and verified (Version: $($nugetProvider.Version))" -Level "SUCCESS"
-            return $true
-        }
-        else {
-            Write-Log "Manual installation failed. NuGet provider still not found after download." -Level "ERROR"
-            return $false
-        }
+        Write-Log "NuGet provider not found. Installing..." -Level "INFO"
+        
+        Install-PackageProvider -Name "NuGet" -Force -Confirm:$false -ErrorAction Stop
+        
+        Write-Log "NuGet provider installed successfully." -Level "SUCCESS"
+        return $true
     }
     catch {
-        Write-Log "Failed to manually install NuGet package provider: $_" -Level "ERROR"
+        Write-Log "Failed to install NuGet package provider: $_" -Level "ERROR"
         return $false
     }
 }
@@ -226,7 +196,7 @@ function Install-WinGetModule {
         # Set PSGallery as trusted to avoid prompts during automation
         $gallery = Get-PSRepository -Name "PSGallery" -ErrorAction SilentlyContinue
         if ($gallery -and $gallery.InstallationPolicy -ne "Trusted") {
-            Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted -ErrorAction Stop
+            Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted -Confirm:$false -ErrorAction Stop
             Write-Log "Set PSGallery as trusted repository." -Level "INFO"
         }
         
