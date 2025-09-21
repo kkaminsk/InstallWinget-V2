@@ -3,17 +3,49 @@ properties:
   configurationVersion: 0.2.0
   resources:
     - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: installNotepadPlusPlus
-      directives:
-        description: "Install Notepad++"
-      settings:
-        id: Notepad++.Notepad++
-        source: winget
-
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
       id: installVLCPlayer
       directives:
         description: "Install VLC Media Player"
       settings:
         id: VideoLAN.VLC
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installVSCode
+      directives:
+        description: "Install Visual Studio Code"
+      settings:
+        id: Microsoft.VisualStudioCode
+        source: winget
+  
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installWinMerge
+      directives:
+        description: "Install WinMerge"
+      settings:
+        id: WinMerge.WinMerge
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installWinMerge
+      directives:
+        description: "Install WinMerge"
+      settings:
+        id: WinMerge.WinMerge
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installWinSCP
+      directives:
+        description: "Install WinSCP"
+      settings:
+        id: WinSCP.WinSCP
+        source: winget
+
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installPutty
+      directives:
+        description: "Install Putty"
+      settings:
+        id: PuTTY.PuTTY
         source: winget
