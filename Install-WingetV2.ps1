@@ -42,11 +42,6 @@
     https://github.com/microsoft/winget-cli
 #>
 
-# Set the preference to 'None' to automatically accept all confirmations
-# Will this fix the nuget prompt?
-$ConfirmPreference = 'None'
-
-
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
