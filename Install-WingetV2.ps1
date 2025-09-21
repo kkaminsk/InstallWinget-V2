@@ -196,7 +196,10 @@ function Install-WinGetModule {
         # Set PSGallery as trusted to avoid prompts during automation
         $gallery = Get-PSRepository -Name "PSGallery" -ErrorAction SilentlyContinue
         if ($gallery -and $gallery.InstallationPolicy -ne "Trusted") {
-            Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted -Confirm:$false -ErrorAction Stop
+            $oldConfirmPreference = $ConfirmPreference
+            $ConfirmPreference = 'None'
+            Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted -ErrorAction Stop
+            $ConfirmPreference = $oldConfirmPreference
             Write-Log "Set PSGallery as trusted repository." -Level "INFO"
         }
         
