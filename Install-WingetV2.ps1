@@ -85,6 +85,11 @@ function Write-Log {
     
     # Write to log file
     try {
+        # Ensure the log directory exists before writing
+        $logDirectory = Split-Path -Path $script:LogPath -Parent
+        if (-not (Test-Path -Path $logDirectory)) {
+            New-Item -ItemType Directory -Path $logDirectory -Force -ErrorAction Stop | Out-Null
+        }
         Add-Content -Path $script:LogPath -Value $logEntry -ErrorAction Stop
     }
     catch {
