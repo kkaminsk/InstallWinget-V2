@@ -27,14 +27,6 @@ properties:
         source: winget
 
     - resource: Microsoft.WinGet.DSC/WinGetPackage
-      id: installWinMerge
-      directives:
-        description: "Install WinMerge"
-      settings:
-        id: WinMerge.WinMerge
-        source: winget
-
-    - resource: Microsoft.WinGet.DSC/WinGetPackage
       id: installWinSCP
       directives:
         description: "Install WinSCP"
