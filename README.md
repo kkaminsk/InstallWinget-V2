@@ -24,6 +24,14 @@ A robust PowerShell script that automates the installation of Windows Package Ma
 .\Install-WingetV2.ps1 -IncludePrerelease -LogPath "C:\Logs\Winget-Install.log"
 ```
 
+### Winget Silent Installation
+
+```powershell
+PowerShell.exe -NonInteractive .\Install-WinGetV2.ps1PowerShell.exe -NonInteractive .\Install-WinGetV2.ps1
+```
+
+
+
 ## Background
 
 As detailed in the "Analysis of the Windows Package Manager's Evolving Dependency Architecture," newer versions of Winget have transitioned to a dependency on the Windows App SDK Runtime. This represents a significant architectural shift from earlier versions that relied primarily on Visual C++ redistributables.
