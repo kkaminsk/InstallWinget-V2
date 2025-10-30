@@ -291,6 +291,28 @@ function Install-WinGet {
     }
 }
 
+function Update-EnvironmentPath {
+    <#
+    .SYNOPSIS
+        Refreshes environment variables in the current PowerShell session.
+    #>
+    [CmdletBinding()]
+    param()
+    
+    try {
+        # Refresh PATH from registry
+        $machinePath = [System.Environment]::GetEnvironmentVariable("Path", "Machine")
+        $userPath = [System.Environment]::GetEnvironmentVariable("Path", "User")
+        $env:Path = "$machinePath;$userPath"
+        Write-Log "Environment PATH refreshed." -Level "INFO"
+        return $true
+    }
+    catch {
+        Write-Log "Failed to refresh environment PATH: $_" -Level "WARNING"
+        return $false
+    }
+}
+
 function Test-WinGetInstallation {
     <#
     .SYNOPSIS
@@ -302,21 +324,47 @@ function Test-WinGetInstallation {
     Write-Log "Verifying Winget installation..." -Level "INFO"
     
     try {
-        # Test if winget command is available
+        # First, try to find winget in PATH
         $wingetPath = Get-Command "winget" -ErrorAction SilentlyContinue
+        
+        # If not in PATH, check common installation locations
         if (-not $wingetPath) {
-            Write-Log "Winget command not found in PATH." -Level "ERROR"
-            return $false
+            Write-Log "Winget not found in PATH. Checking common installation locations..." -Level "INFO"
+            
+            $commonPaths = @(
+                "$env:LOCALAPPDATA\Microsoft\WindowsApps\winget.exe",
+                "$env:ProgramFiles\WindowsApps\Microsoft.DesktopAppInstaller*\winget.exe"
+            )
+            
+            foreach ($pathPattern in $commonPaths) {
+                $resolvedPaths = Get-ChildItem -Path $pathPattern -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($resolvedPaths) {
+                    $wingetPath = $resolvedPaths.FullName
+                    Write-Log "Winget found at: $wingetPath" -Level "SUCCESS"
+                    break
+                }
+            }
+            
+            if (-not $wingetPath) {
+                Write-Log "Winget not found in PATH or common installation locations." -Level "ERROR"
+                return $false
+            }
+        }
+        else {
+            $wingetPath = $wingetPath.Source
+            Write-Log "Winget found in PATH at: $wingetPath" -Level "SUCCESS"
         }
         
         # Test winget version command
-        $versionOutput = & winget --version 2>&1
+        $versionOutput = & $wingetPath --version 2>&1
         if ($LASTEXITCODE -eq 0) {
             Write-Log "Winget is functional. Version: $versionOutput" -Level "SUCCESS"
+            Write-Log "Winget executable location: $wingetPath" -Level "INFO"
             return $true
         }
         else {
             Write-Log "Winget command failed with exit code: $LASTEXITCODE" -Level "ERROR"
+            Write-Log "Error output: $versionOutput" -Level "ERROR"
             return $false
         }
     }
@@ -421,6 +469,11 @@ function Main {
             Write-Log "Failed to install Winget. Installation failed." -Level "ERROR"
             exit 1
         }
+        
+        # Step 5.5: Refresh environment variables
+        Write-Log "Refreshing environment variables..." -Level "INFO"
+        Update-EnvironmentPath
+        Start-Sleep -Seconds 2
         
         # Step 6: Final verification
         if (-not (Test-WinGetInstallation)) {
