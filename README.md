@@ -27,7 +27,7 @@ A robust PowerShell script that automates the installation of Windows Package Ma
 ### Winget Silent Installation
 
 ```powershell
-PowerShell.exe -NonInteractive .\Install-WinGetV2.ps1PowerShell.exe -NonInteractive .\Install-WinGetV2.ps1
+PowerShell.exe -NonInteractive .\Install-WingetV2.ps1
 ```
 
 
@@ -43,6 +43,12 @@ This script addresses the challenge of bootstrapping Winget on clean Windows ins
 - Unattended installation through NonInteractive mode
 - Eases system administrator workflows for bootstrapping package management capabilities
 - Enterprise environments requiring consistent Winget deployment across multiple systems
+
+## Dependency Update: App Installer uses WinUI 3
+
+- Starting with WinGet 1.12.350, App Installer moved from WinUI 2 to WinUI 3.
+- This change replaces the WinUI 2 dependency with the Windows App Runtime 1.8+.
+- This script relies on `Repair-WinGetPackageManager` to pull the correct components and includes a verification step that enforces Windows App Runtime 1.8+ presence.
 
 ## Parameters
 
@@ -64,6 +70,7 @@ This script leverages the `Microsoft.WinGet.Client` PowerShell module and its `R
 - ✅ **Dual Logging**: Console output with color coding and file logging
 - ✅ **Prerelease Support**: Option to install preview versions of Winget
 - ✅ **Dependency Management**: Automatically installs all required components
+- ✅ **Dependency Verification**: Validates Windows App Runtime 1.8+ presence after installation
 
 ## Requirements
 
@@ -76,8 +83,8 @@ This script leverages the `Microsoft.WinGet.Client` PowerShell module and its `R
 ### Dependencies Installed
 The script automatically installs the following components:
 - **Primary Application**: Microsoft.DesktopAppInstaller (Winget)
-- **Windows App SDK Runtime Components**:
-  - Microsoft.WindowsAppRuntime (Framework)
+- **Windows App Runtime 1.8+ and Windows App SDK components**:
+  - Microsoft.WindowsAppRuntime (Framework, 1.8+)
   - Microsoft.WindowsAppSDK.Main (Main)
   - Microsoft.WindowsAppSDK.Singleton (Singleton)
   - Microsoft.WindowsAppSDK.DDLM (for appropriate architecture)
@@ -93,5 +100,56 @@ The script follows this sequence:
 4. **NuGet Provider** - Installs NuGet package provider if needed
 5. **WinGet Module** - Installs Microsoft.WinGet.Client module
 6. **Winget Installation** - Executes `Repair-WinGetPackageManager`
-7. **Verification** - Tests Winget functionality
+7. **Verification** - Tests Winget functionality and validates Windows App Runtime 1.8+ presence
 8. **Completion** - Reports success and duration
+
+## Windows Sandbox Examples
+
+### A) Quick run in Windows Sandbox (.wsb)
+Save the following as `WingetSandbox.wsb` and double-click it. It downloads and runs the installer script inside the sandbox.
+
+```xml
+<Configuration>
+  <VGpu>Disable</VGpu>
+  <Networking>Enable</Networking>
+  <LogonCommand>
+    <Command>
+      powershell -NoProfile -ExecutionPolicy Bypass -Command "
+        $url='https://raw.githubusercontent.com/kkaminsk/InstallWinget-V2/main/Install-WingetV2.ps1';
+        $script=Join-Path $env:TEMP 'Install-WingetV2.ps1';
+        Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $script;
+        & $script;
+        winget --version
+      "
+    </Command>
+  </LogonCommand>
+</Configuration>
+```
+
+### B) Install apps from a simple config.yaml
+Create a minimal `config.yaml` with the app Ids you want to install (Ids are from `winget search`, e.g., `Microsoft.VisualStudioCode`).
+
+```yaml
+properties:
+  configurationVersion: 0.2.0
+  resources:
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installVSCode
+      directives:
+        description: "Install Visual Studio Code"
+      settings:
+        id: Microsoft.VisualStudioCode
+        source: winget
+```
+
+After running this script (to ensure winget is present), run:
+
+```powershell
+$url2 = 'https://raw.githubusercontent.com/kkaminsk/InstallWinget-V2/main/YAMLExample/config.yaml'
+$script2 = Join-Path $env:TEMP 'config.yaml'
+Invoke-WebRequest -Uri $url2 -OutFile $script2
+
+winget configure -f $script2
+```
+
+Tip: You can combine this with Windows Sandbox by mapping a host folder that contains both `Install-WingetV2.ps1` and `config.yaml`, then referencing them from the sandbox Desktop path (for example: `$env:USERPROFILE\Desktop\InstallWinget-V2`).
