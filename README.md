@@ -102,3 +102,54 @@ The script follows this sequence:
 6. **Winget Installation** - Executes `Repair-WinGetPackageManager`
 7. **Verification** - Tests Winget functionality and validates Windows App Runtime 1.8+ presence
 8. **Completion** - Reports success and duration
+
+## Windows Sandbox Examples
+
+### A) Quick run in Windows Sandbox (.wsb)
+Save the following as `WingetSandbox.wsb` and double-click it. It downloads and runs the installer script inside the sandbox.
+
+```xml
+<Configuration>
+  <VGpu>Disable</VGpu>
+  <Networking>Enable</Networking>
+  <LogonCommand>
+    <Command>
+      powershell -NoProfile -ExecutionPolicy Bypass -Command "
+        $url='https://raw.githubusercontent.com/kkaminsk/InstallWinget-V2/main/Install-WingetV2.ps1';
+        $script=Join-Path $env:TEMP 'Install-WingetV2.ps1';
+        Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $script;
+        & $script;
+        winget --version
+      "
+    </Command>
+  </LogonCommand>
+</Configuration>
+```
+
+### B) Install apps from a simple config.yaml
+Create a minimal `config.yaml` with the app Ids you want to install (Ids are from `winget search`, e.g., `Microsoft.VisualStudioCode`).
+
+```yaml
+properties:
+  configurationVersion: 0.2.0
+  resources:
+    - resource: Microsoft.WinGet.DSC/WinGetPackage
+      id: installVSCode
+      directives:
+        description: "Install Visual Studio Code"
+      settings:
+        id: Microsoft.VisualStudioCode
+        source: winget
+```
+
+After running this script (to ensure winget is present), run:
+
+```powershell
+$url2 = 'https://raw.githubusercontent.com/kkaminsk/InstallWinget-V2/main/YAMLExample/config.yaml'
+$script2 = Join-Path $env:TEMP 'config.yaml'
+Invoke-WebRequest -Uri $url2 -OutFile $script2
+
+winget configure -f $script2
+```
+
+Tip: You can combine this with Windows Sandbox by mapping a host folder that contains both `Install-WingetV2.ps1` and `config.yaml`, then referencing them from the sandbox Desktop path (for example: `$env:USERPROFILE\Desktop\InstallWinget-V2`).
