@@ -123,7 +123,6 @@ function Test-Prerequisites {
     Write-Log "PowerShell version check passed: $($PSVersionTable.PSVersion)" -Level "SUCCESS"
     
     # Check Windows version
-    $osVersion = [System.Environment]::OSVersion.Version
     $buildNumber = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").CurrentBuildNumber
     
     # Windows 10 1809 = build 17763, Windows Server 2022 = build 20348
@@ -327,7 +326,54 @@ function Test-WinGetInstallation {
     }
 }
 
-#endregion
+function Test-WindowsAppRuntime {
+    [CmdletBinding()]
+    param()
+    
+    Write-Log "Verifying Windows App Runtime installation..." -Level "INFO"
+    
+    try {
+        $warPackages = Get-AppxPackage -AllUsers -Name "Microsoft.WindowsAppRuntime*" -ErrorAction SilentlyContinue
+        if (-not $warPackages) {
+            Write-Log "Windows App Runtime packages not found." -Level "ERROR"
+            return $false
+        }
+        
+        $branches = @()
+        foreach ($p in $warPackages) {
+            $name = $p.Name
+            if ($name -match 'Microsoft\.WindowsAppRuntime\.(\d+)\.(\d+)') {
+                $branches += [PSCustomObject]@{ Name = $name; Major = [int]$matches[1]; Minor = [int]$matches[2]; Version = $p.Version }
+            }
+        }
+        
+        if ($branches.Count -eq 0) {
+            $names = ($warPackages | Select-Object -ExpandProperty Name -Unique) -join ", "
+            $versions = ($warPackages | Select-Object -ExpandProperty Version -Unique) -join ", "
+            Write-Log "Windows App Runtime packages detected but branch could not be determined. Names: $names" -Level "ERROR"
+            Write-Log "Windows App Runtime versions: $versions" -Level "INFO"
+            return $false
+        }
+        
+        $detected = ($branches | Select-Object -Property Major,Minor -Unique | ForEach-Object { "$($_.Major).$($_.Minor)" }) -join ", "
+        Write-Log "Detected Windows App Runtime branches: $detected" -Level "INFO"
+        
+        $maxBranch = $branches | Sort-Object @{Expression = 'Major'; Descending = $true}, @{Expression = 'Minor'; Descending = $true} | Select-Object -First 1
+        if ($maxBranch.Major -gt 1 -or ($maxBranch.Major -eq 1 -and $maxBranch.Minor -ge 8)) {
+            Write-Log "Windows App Runtime requirement satisfied (found branch $($maxBranch.Major).$($maxBranch.Minor))." -Level "SUCCESS"
+            return $true
+        }
+        else {
+            $names = ($warPackages | Select-Object -ExpandProperty Name -Unique) -join ", "
+            Write-Log "Windows App Runtime 1.8 or newer is required. Found branches: $detected. Packages: $names" -Level "ERROR"
+            return $false
+        }
+    }
+    catch {
+        Write-Log "Error during Windows App Runtime verification: $_" -Level "ERROR"
+        return $false
+    }
+}
 
 #region Main Execution
 
@@ -379,6 +425,11 @@ function Main {
         # Step 6: Final verification
         if (-not (Test-WinGetInstallation)) {
             Write-Log "Winget installation verification failed." -Level "ERROR"
+            exit 1
+        }
+        
+        if (-not (Test-WindowsAppRuntime)) {
+            Write-Log "Windows App Runtime verification failed." -Level "ERROR"
             exit 1
         }
         

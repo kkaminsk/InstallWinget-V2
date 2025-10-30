@@ -27,7 +27,7 @@ A robust PowerShell script that automates the installation of Windows Package Ma
 ### Winget Silent Installation
 
 ```powershell
-PowerShell.exe -NonInteractive .\Install-WinGetV2.ps1PowerShell.exe -NonInteractive .\Install-WinGetV2.ps1
+PowerShell.exe -NonInteractive .\Install-WingetV2.ps1
 ```
 
 
@@ -43,6 +43,12 @@ This script addresses the challenge of bootstrapping Winget on clean Windows ins
 - Unattended installation through NonInteractive mode
 - Eases system administrator workflows for bootstrapping package management capabilities
 - Enterprise environments requiring consistent Winget deployment across multiple systems
+
+## Dependency Update: App Installer uses WinUI 3
+
+- Starting with WinGet 1.12.350, App Installer moved from WinUI 2 to WinUI 3.
+- This change replaces the WinUI 2 dependency with the Windows App Runtime 1.8+.
+- This script relies on `Repair-WinGetPackageManager` to pull the correct components and includes a verification step that enforces Windows App Runtime 1.8+ presence.
 
 ## Parameters
 
@@ -64,6 +70,7 @@ This script leverages the `Microsoft.WinGet.Client` PowerShell module and its `R
 - ✅ **Dual Logging**: Console output with color coding and file logging
 - ✅ **Prerelease Support**: Option to install preview versions of Winget
 - ✅ **Dependency Management**: Automatically installs all required components
+- ✅ **Dependency Verification**: Validates Windows App Runtime 1.8+ presence after installation
 
 ## Requirements
 
@@ -76,8 +83,8 @@ This script leverages the `Microsoft.WinGet.Client` PowerShell module and its `R
 ### Dependencies Installed
 The script automatically installs the following components:
 - **Primary Application**: Microsoft.DesktopAppInstaller (Winget)
-- **Windows App SDK Runtime Components**:
-  - Microsoft.WindowsAppRuntime (Framework)
+- **Windows App Runtime 1.8+ and Windows App SDK components**:
+  - Microsoft.WindowsAppRuntime (Framework, 1.8+)
   - Microsoft.WindowsAppSDK.Main (Main)
   - Microsoft.WindowsAppSDK.Singleton (Singleton)
   - Microsoft.WindowsAppSDK.DDLM (for appropriate architecture)
@@ -93,5 +100,5 @@ The script follows this sequence:
 4. **NuGet Provider** - Installs NuGet package provider if needed
 5. **WinGet Module** - Installs Microsoft.WinGet.Client module
 6. **Winget Installation** - Executes `Repair-WinGetPackageManager`
-7. **Verification** - Tests Winget functionality
+7. **Verification** - Tests Winget functionality and validates Windows App Runtime 1.8+ presence
 8. **Completion** - Reports success and duration
